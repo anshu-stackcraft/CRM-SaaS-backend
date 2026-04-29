@@ -1,0 +1,30 @@
+from django.contrib.auth import get_user_model
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.viewsets import ModelViewSet
+
+from .models import Lead
+from .serializers import LeadSerializer
+
+User = get_user_model()
+
+
+class LeadViewSet(ModelViewSet):
+    queryset = Lead.objects.all()
+    serializer_class = LeadSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == "employee":
+            return Lead.objects.filter(assigned_to=user).order_by("-id")
+        return Lead.objects.all().order_by("-id")
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        assigned_to_id = self.request.data.get("assigned_to")
+
+        if user.role in ["super_admin", "technical_admin"] and assigned_to_id:
+            assignee = User.objects.filter(id=assigned_to_id).first()
+            serializer.save(assigned_to=assignee or user)
+        else:
+            serializer.save(assigned_to=user)
