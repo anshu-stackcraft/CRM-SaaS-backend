@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
+from users.permissions import IsAuthenticatedAndReadOnlyForEmployee
 
 from .models import Lead
 from .serializers import LeadSerializer
@@ -11,10 +11,12 @@ User = get_user_model()
 class LeadViewSet(ModelViewSet):
     queryset = Lead.objects.all()
     serializer_class = LeadSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedAndReadOnlyForEmployee]
 
     def get_queryset(self):
         user = self.request.user
+        if not user.is_authenticated:
+            return Lead.objects.all().order_by("-id")
         if user.role == "employee":
             return Lead.objects.filter(assigned_to=user).order_by("-id")
         return Lead.objects.all().order_by("-id")

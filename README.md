@@ -42,7 +42,7 @@ python -m venv venv
 4. Install dependencies:
 
 ```bash
-pip install django djangorestframework djangorestframework-simplejwt django-cors-headers
+pip install django djangorestframework djangorestframework-simplejwt django-cors-headers pandas
 ```
 
 5. Run migrations:

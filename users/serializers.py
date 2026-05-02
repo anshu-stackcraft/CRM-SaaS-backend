@@ -9,12 +9,20 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "password", "role", "is_active"]
+        fields = ["id", "username", "full_name", "phone", "email", "password", "role", "is_active"]
         read_only_fields = ["id"]
 
     def validate_role(self, value):
         if value not in ["super_admin", "technical_admin", "employee"]:
             raise serializers.ValidationError("Invalid role selected.")
+        return value
+
+    def validate_email(self, value):
+        qs = User.objects.filter(email=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("Email already exists.")
         return value
 
     def create(self, validated_data):
@@ -40,4 +48,4 @@ class UserSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "username", "email", "role"]
+        fields = ["id", "username", "full_name", "phone", "email", "role", "theme_preference"]
