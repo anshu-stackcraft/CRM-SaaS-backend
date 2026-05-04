@@ -142,14 +142,18 @@ SIMPLE_JWT = {
 }
 
 # CORS + CSRF
-CORS_ALLOWED_ORIGINS = list(filter(None, [
-    FRONTEND_URL,
-    "http://localhost:3000",
-]))
+FRONTEND_URL = os.getenv("FRONTEND_URL")
 
-CSRF_TRUSTED_ORIGINS = list(filter(None, [
+CORS_ALLOWED_ORIGINS = [
     FRONTEND_URL,
-]))
+    "https://crm-saas-backend-production-9b47.up.railway.app",
+    "http://localhost:3000",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    FRONTEND_URL,
+    "https://crm-saas-backend-production-9b47.up.railway.app",
+]
 
 from corsheaders.defaults import default_headers
 
