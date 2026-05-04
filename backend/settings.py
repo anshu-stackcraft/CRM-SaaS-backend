@@ -9,16 +9,12 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# 🔐 SECURITY
+# SECURITY
 SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-secret-key")
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
-# ✅ Fix frontend URL (remove trailing /)
+# Fix frontend URL (remove trailing /)
 FRONTEND_URL = os.getenv("FRONTEND_URL", "").rstrip("/")
-
-# 🔍 DEBUG (remove after fixing)
-print("FRONTEND_URL =", FRONTEND_URL)
-print("DATABASE_URL =", os.getenv("DATABASE_URL"))
 
 ALLOWED_HOSTS = [
     ".railway.app",
@@ -27,7 +23,7 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
 ]
 
-# 📦 APPS
+# APPS
 INSTALLED_APPS = [
     'corsheaders',
 
@@ -47,7 +43,7 @@ INSTALLED_APPS = [
     'tasks',
 ]
 
-# ⚙️ MIDDLEWARE
+# MIDDLEWARE
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
 
@@ -66,7 +62,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'backend.urls'
 
-# 🎯 TEMPLATES
+# TEMPLATES
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -84,16 +80,25 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
-# 🗄️ DATABASE (IMPORTANT FIX)
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL', f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
-        conn_max_age=600,
-        ssl_require=not DEBUG
-    )
-}
+# DATABASE
+DATABASE_URL = os.getenv('DATABASE_URL')
 
-# 🔑 PASSWORD VALIDATION
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+        )
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+
+# PASSWORD VALIDATION
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -101,25 +106,29 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# 🌍 INTERNATIONAL
+# INTERNATIONAL
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Kolkata'
 USE_I18N = True
 USE_TZ = True
 
-# 📁 STATIC & MEDIA
+# STATIC & MEDIA
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# 🔐 AUTH
+# AUTH
 AUTH_USER_MODEL = 'users.User'
 
-# ⚡ DRF + JWT
+# DRF + JWT
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -132,7 +141,7 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-# 🌐 CORS + CSRF (SAFE)
+# CORS + CSRF
 CORS_ALLOWED_ORIGINS = list(filter(None, [
     FRONTEND_URL,
     "http://localhost:3000",
@@ -150,5 +159,5 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 
 CORS_ALLOW_CREDENTIALS = True
 
-# 🧠 DEFAULT PK
+# DEFAULT PK
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
