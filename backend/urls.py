@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -8,7 +8,15 @@ from django.conf.urls.static import static
 def health(_request):
     return JsonResponse({"status": "ok", "service": "DegitalStepIn CRM API"})
 
+
+# 👇 ADD THIS
+def home(request):
+    return HttpResponse("🚀 Django CRM Backend Running")
+
+
 urlpatterns = [
+    path('', home),  # 👈 root fix
+
     path('admin/', admin.site.urls),
     path('api/health/', health),
 
