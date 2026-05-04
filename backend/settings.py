@@ -3,6 +3,7 @@ from datetime import timedelta
 import os
 import dj_database_url
 from dotenv import load_dotenv
+from corsheaders.defaults import default_headers
 
 # Load env
 load_dotenv()
@@ -13,9 +14,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY
 # ========================
 SECRET_KEY = os.getenv("SECRET_KEY")
+
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+ALLOWED_HOSTS = os.getenv(
+    "ALLOWED_HOSTS",
+    "localhost,127.0.0.1,.onrender.com,.vercel.app"
+).split(",")
 
 # ========================
 # APPS
@@ -81,13 +86,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 # ========================
-# DATABASE
+# DATABASE (RENDER POSTGRES)
 # ========================
-DATABASE_URL = os.getenv('DATABASE_URL')
-
 DATABASES = {
-    'default': dj_database_url.parse(
-        DATABASE_URL,
+    "default": dj_database_url.parse(
+        os.getenv("DATABASE_URL"),
         conn_max_age=600,
         ssl_require=True
     )
@@ -112,7 +115,7 @@ USE_I18N = True
 USE_TZ = True
 
 # ========================
-# STATIC & MEDIA
+# STATIC FILES
 # ========================
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
@@ -123,7 +126,7 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # ========================
-# AUTH
+# AUTH USER
 # ========================
 AUTH_USER_MODEL = 'users.User'
 
@@ -143,21 +146,18 @@ SIMPLE_JWT = {
 }
 
 # ========================
-# CORS + CSRF
+# CORS + CSRF (SAFE)
 # ========================
 FRONTEND_URL = os.getenv("FRONTEND_URL")
 BACKEND_URL = os.getenv("BACKEND_URL")
 
 CORS_ALLOWED_ORIGINS = [
-    FRONTEND_URL,
+    url for url in [FRONTEND_URL] if url
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    FRONTEND_URL,
-    BACKEND_URL,
+    url for url in [FRONTEND_URL, BACKEND_URL] if url
 ]
-
-from corsheaders.defaults import default_headers
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'authorization',
@@ -166,8 +166,10 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 CORS_ALLOW_CREDENTIALS = True
 
 # ========================
-# SECURITY (IMPORTANT FOR RENDER)
+# SECURITY (PRODUCTION)
 # ========================
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
