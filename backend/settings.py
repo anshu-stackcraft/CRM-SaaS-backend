@@ -5,7 +5,6 @@ import dj_database_url
 from dotenv import load_dotenv
 from corsheaders.defaults import default_headers
 
-# Load env
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -13,7 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ========================
 # SECURITY
 # ========================
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
 
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
@@ -86,15 +85,26 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 # ========================
-# DATABASE (RENDER POSTGRES)
+# DATABASE (AUTO SWITCH)
 # ========================
-DATABASES = {
-    "default": dj_database_url.parse(
-        os.getenv("DATABASE_URL"),
-        conn_max_age=600,
-        ssl_require=True
-    )
-}
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if DATABASE_URL:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=not DEBUG
+        )
+    }
+else:
+    # Local fallback (SQLite)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 # ========================
 # PASSWORD VALIDATION
@@ -146,7 +156,7 @@ SIMPLE_JWT = {
 }
 
 # ========================
-# CORS + CSRF (SAFE)
+# CORS + CSRF
 # ========================
 FRONTEND_URL = os.getenv("FRONTEND_URL")
 BACKEND_URL = os.getenv("BACKEND_URL")

@@ -1,14 +1,16 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
     UserViewSet,
     dashboard_summary,
+    login,
     profile,
     register,
     setup_super_admin,
     super_admin_analytics,
+    super_admin_login,
     update_theme_preference,
 )
 
@@ -16,7 +18,8 @@ router = DefaultRouter()
 router.register("", UserViewSet, basename="users")
 
 urlpatterns = [
-    path("login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("login/", login, name="login"),
+    path("super-admin-login/", super_admin_login, name="super_admin_login"),
     path("refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("profile/", profile, name="profile"),
     path("dashboard-summary/", dashboard_summary, name="dashboard_summary"),
