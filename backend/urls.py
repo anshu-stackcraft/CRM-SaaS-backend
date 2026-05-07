@@ -7,8 +7,9 @@ from django.conf.urls.static import static
 
 # ✅ Home (root) – show links instead of text
 def home(request):
+    # A simple HTML response with links to all API endpoints and admin panel
     return HttpResponse("""
-        <h2>🚀 CRM Backend API</h2>
+        <h2>CRM Backend API</h2>
         <p>Available Endpoints:</p>
         <ul>
             <li><a href="/admin/">Admin Panel</a></li>
