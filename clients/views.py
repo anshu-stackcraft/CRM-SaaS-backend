@@ -1,3 +1,6 @@
+from io import BytesIO
+
+from django.http import HttpResponse
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -165,3 +168,79 @@ def list_imported_files(request):
         for f in files
     ]
     return Response(payload)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticatedAndReadOnlyForEmployee])
+def export_excel_clients(request):
+    if request.user.role not in ["super_admin", "technical_admin"]:
+        return Response(
+            {"detail": "Only admin users can export excel."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    try:
+        import pandas as pd
+    except ModuleNotFoundError:
+        return Response(
+            {
+                "detail": "pandas is required for export. Install it with: pip install pandas openpyxl",
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    clients = Client.objects.all().order_by("-id")
+    if not clients.exists():
+        return Response(
+            {"detail": "No clients available to export."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    rows = []
+    for client in clients:
+        row_data = {
+            "is_active": client.is_active,
+            "name": client.name,
+            "mac_address": client.mac_address,
+            "phone": client.phone,
+            "country": client.country,
+            "comments": client.comments,
+            "follow_up_time": client.follow_up_time,
+            "payment": float(client.payment or 0),
+            "action": client.action,
+            "created_at": client.created_at,
+            "updated_at": client.updated_at,
+        }
+        
+        # Convert timezone-aware datetimes to naive for Excel compatibility
+        if client.follow_up_time:
+            row_data["follow_up_time"] = client.follow_up_time.replace(tzinfo=None)
+        if client.created_at:
+            row_data["created_at"] = client.created_at.replace(tzinfo=None)
+        if client.updated_at:
+            row_data["updated_at"] = client.updated_at.replace(tzinfo=None)
+            
+        rows.append(row_data)
+
+    df = pd.DataFrame(rows)
+
+    output = BytesIO()
+    try:
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            df.to_excel(writer, index=False, sheet_name="Clients")
+    except Exception as exc:
+        return Response(
+            {
+                "detail": f"Failed to build export file: {str(exc)}",
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    output.seek(0)
+
+    response = HttpResponse(
+        output.read(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = 'attachment; filename="clients.xlsx"'
+    return response
