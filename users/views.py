@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate, get_user_model
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -10,9 +11,10 @@ from clients.models import Client
 from deals.models import Deal
 from leads.models import Lead
 from tasks.models import Task
+from .models import Attendance
 
 from .permissions import IsSuperAdmin, IsTechnicalOrSuperAdmin
-from .serializers import ProfileSerializer, UserSerializer
+from .serializers import AttendanceSerializer, ProfileSerializer, UserSerializer
 
 User = get_user_model()
 
@@ -137,6 +139,62 @@ def register(request):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def mark_attendance(request):
+    user = request.user
+    if user.role != "employee":
+        return Response(
+            {"detail": "Only employees can mark attendance."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    now = timezone.localtime()
+    if now.hour < 10 or now.hour >= 19:
+        return Response(
+            {"detail": "Attendance can only be marked between 10:00 and 19:00."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    profile = getattr(user, "employee_profile", None)
+    if not profile:
+        return Response(
+            {"detail": "Employee profile is required to mark attendance."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    employee_id = request.data.get("employee_id")
+    if not employee_id:
+        employee_id = profile.emp_id
+
+    if employee_id != profile.emp_id:
+        return Response(
+            {"detail": "Employee ID does not match your profile."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    attendance = Attendance.objects.create(
+        user=user,
+        employee_id=employee_id,
+        source="scan",
+    )
+
+    return Response(AttendanceSerializer(attendance).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def attendance_history(request):
+    user = request.user
+    if user.role == "employee":
+        queryset = Attendance.objects.filter(user=user)
+    else:
+        queryset = Attendance.objects.all()
+
+    serializer = AttendanceSerializer(queryset, many=True)
+    return Response(serializer.data)
+
+
+@api_view(["POST"])
 @permission_classes([AllowAny])
 def setup_super_admin(request):
     if User.objects.filter(role="super_admin").exists():
@@ -171,11 +229,13 @@ def dashboard_summary(request):
         leads_count = Lead.objects.filter(assigned_to=user).count()
         tasks_count = Task.objects.filter(assigned_to=user).count()
         deals_count = Deal.objects.filter(assigned_to=user).count() if hasattr(Deal, "assigned_to") else Deal.objects.count()
+        attendance_count = Attendance.objects.filter(user=user, created_at__date=timezone.localdate()).count()
     else:
         users_count = User.objects.count()
         leads_count = Lead.objects.count()
         tasks_count = Task.objects.count()
         deals_count = Deal.objects.count()
+        attendance_count = Attendance.objects.count()
 
     return Response(
         {
@@ -184,6 +244,7 @@ def dashboard_summary(request):
             "leads": leads_count,
             "deals": deals_count,
             "tasks": tasks_count,
+            "attendance": attendance_count,
         }
     )
 
@@ -252,11 +313,15 @@ class UserViewSet(ModelViewSet):
 
     def get_queryset(self):
         requester = self.request.user
+        queryset = User.objects.all().order_by("-id")
+        if requester.role != "super_admin":
+            queryset = queryset.filter(role="employee")
 
-        if requester.role == "super_admin":
-            return User.objects.all().order_by("-id")
+        role_filter = self.request.query_params.get("role")
+        if role_filter:
+            queryset = queryset.filter(role=role_filter)
 
-        return User.objects.filter(role="employee").order_by("-id")
+        return queryset
 
     def create(self, request, *args, **kwargs):
         return Response(

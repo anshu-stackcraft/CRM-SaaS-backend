@@ -12,6 +12,8 @@ from .views import (
     super_admin_analytics,
     super_admin_login,
     update_theme_preference,
+    mark_attendance,
+    attendance_history,
 )
 
 router = DefaultRouter()
@@ -23,6 +25,8 @@ urlpatterns = [
     path("refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("profile/", profile, name="profile"),
     path("dashboard-summary/", dashboard_summary, name="dashboard_summary"),
+    path("attendance/", mark_attendance, name="mark_attendance"),
+    path("attendance-history/", attendance_history, name="attendance_history"),
     path("theme-preference/", update_theme_preference, name="theme_preference"),
     path("super-admin-analytics/", super_admin_analytics, name="super_admin_analytics"),
     path("register/", register, name="register"),

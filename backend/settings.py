@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     'clients',
     'deals',
     'tasks',
+    'office',
+    'emp'
 ]
 
 # ========================
@@ -173,6 +175,17 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+if DEBUG:
+    default_dev_origins = [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+    ]
+    for origin in default_dev_origins:
+        if origin not in CORS_ALLOWED_ORIGINS:
+            CORS_ALLOWED_ORIGINS.append(origin)
+        if origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(origin)
 
 # ========================
 # SECURITY (PRODUCTION)

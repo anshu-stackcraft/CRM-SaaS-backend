@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
+from .models import Attendance
+
 User = get_user_model()
 
 
@@ -46,6 +48,25 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    emp_id = serializers.CharField(source="employee_profile.emp_id", read_only=True)
+    address = serializers.CharField(source="employee_profile.address", read_only=True)
+
     class Meta:
         model = User
-        fields = ["id", "username", "full_name", "phone", "email", "role", "theme_preference"]
+        fields = ["id", "username", "full_name", "phone", "email", "role", "theme_preference", "emp_id", "address"]
+
+
+class AttendanceSerializer(serializers.ModelSerializer):
+    user = ProfileSerializer(read_only=True)
+
+    class Meta:
+        model = Attendance
+        fields = [
+            "id",
+            "user",
+            "employee_id",
+            "status",
+            "source",
+            "created_at",
+        ]
+        read_only_fields = ["id", "user", "created_at"]

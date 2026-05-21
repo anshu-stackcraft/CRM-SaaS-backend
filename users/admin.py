@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 from django.core.exceptions import ValidationError
 
-from .models import User
+from .models import Attendance, User
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -62,3 +62,11 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     )
+
+
+@admin.register(Attendance)
+class AttendanceAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "employee_id", "status", "source", "created_at")
+    list_filter = ("status", "source", "created_at")
+    search_fields = ("user__username", "employee_id")
+    ordering = ("-created_at",)

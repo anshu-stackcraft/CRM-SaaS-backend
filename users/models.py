@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser
+from django.conf import settings
 from django.db import models
 
 
@@ -47,3 +48,26 @@ class User(AbstractUser):
         if not self.full_name:
             self.full_name = self.username
         super().save(*args, **kwargs)
+
+
+class Attendance(models.Model):
+    STATUS_CHOICES = (
+        ("present", "Present"),
+        ("absent", "Absent"),
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="attendances",
+    )
+    employee_id = models.CharField(max_length=150, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="present")
+    source = models.CharField(max_length=50, default="scan")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user.username} attendance {self.created_at:%Y-%m-%d %H:%M}"
